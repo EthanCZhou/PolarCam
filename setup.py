@@ -10,7 +10,7 @@ setup(
     install_requires=[
         "PySide6",
         "opencv-python",
-        "numpy<2",
+        "numpy",
         "scikit-image",
         "matplotlib",
         "scipy",
