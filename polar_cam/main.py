@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import QApplication
-from polar_cam.camera_control import CameraControl
-from polar_cam.image_display import Display
-from polar_cam.image_processor import ImageProcessor
-from polar_cam.data_analyzer import DataAnalyzer
-from polar_cam.main_window import MainWindow
+from camera_control import CameraControl
+from image_display import Display
+from image_processor import ImageProcessor
+from data_analyzer import DataAnalyzer
+from main_window import MainWindow
 import sys
 
 def main():

@@ -2,7 +2,7 @@ from PySide6.QtCore import QObject, Signal, QTimer
 import numpy as np
 from ids_peak import ids_peak, ids_peak_ipl_extension
 from PySide6.QtGui import QImage
-from .utils import configure_device_component, fetch_camera_parameters
+from polar_cam.utils import configure_device_component, fetch_camera_parameters
 
 class CameraControl(QObject):
     image_acquired = Signal(QImage)
@@ -32,6 +32,7 @@ class CameraControl(QObject):
             "Height": {"min": 0, "max": 0, "current": 0, "increment": 0},
             "AnalogGain": {"min": 0, "max": 0, "current": 0},
             "DigitalGain": {"min": 0, "max": 0, "current": 0},
+            "ComponentSelector" : "Raw"
         }
         ids_peak.Library.Initialize()
 
@@ -208,12 +209,25 @@ class CameraControl(QObject):
         except Exception as e:
             self.camera_error.emit(f"Error setting {gain_type}: {str(e)}")
 
+    def set_ComponentSelector(self, ComponentSelector):
+        try:
+            if ComponentSelector in ["Raw", "Intensity", "IntensityNonPolarized", "IntensityOnlyPolarized", "DegreeOfPolarization", "PolarizationAngle"]:
+                self.node_map_remote_device.FindNode("ComponentSelector")\
+                    .SetCurrentEntry(ComponentSelector)
+                self.node_map_remote_device.FindNode("ComponentEnable").SetValue(True)
+            else:
+                raise ValueError("Invalid ComponentSelector type specified")
+        except Exception as e:
+            self.camera_error.emit(f"Error setting {ComponentSelector}: {str(e)}")
+
     def set_parameters(self, updates):
         try:
             self.stop_acquisition()
             for parameter_name, values in updates.items():
                 if parameter_name in ["AnalogGain", "DigitalGain"]:
                     self.set_gain(parameter_name, values['current'])
+                elif parameter_name == "ComponentSelector":
+                    self.set_ComponentSelector(ComponentSelector=values)
                 elif parameter_name in self.parameters:
                     current_value = values['current']
                     node = self.node_map_remote_device.FindNode(parameter_name)

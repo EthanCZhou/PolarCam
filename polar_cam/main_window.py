@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit,
     QHBoxLayout, QDockWidget, QFormLayout, QGroupBox, QMessageBox,
-    QStatusBar, QFileDialog, QScrollArea, QApplication, QInputDialog
+    QStatusBar, QFileDialog, QScrollArea, QApplication, QInputDialog, QComboBox
 )
 from PySide6.QtCore import Qt, QTimer, Slot
 import cv2
@@ -162,6 +162,7 @@ class MainWindow(QMainWindow):
         self.create_roi_offset_group(sidebar_layout)
         self.create_gain_group(sidebar_layout)
         self.create_spot_detection_group(sidebar_layout)
+        self.create_ComponentSelector_group(sidebar_layout)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.parameter_sidebar)
 
@@ -372,6 +373,30 @@ class MainWindow(QMainWindow):
 
         self.spot_detection_group.setLayout(form_layout)
         layout.addWidget(self.spot_detection_group)
+
+    def create_ComponentSelector_group(self, layout): 
+        self.ComponentSelector_group = QGroupBox("ComponentSelector Parameters")
+        form_layout = QFormLayout()
+        
+        self.combo = QComboBox()
+        self.combo.addItems(["Raw", "Intensity", "IntensityNonPolarized", "IntensityOnlyPolarized", "DegreeOfPolarization", "PolarizationAngle"])
+        self.combo.currentTextChanged.connect(self.on_ComponentSelector_changed)
+
+        form_layout.addRow(self.combo)
+
+        self.ComponentSelector_group.setLayout(form_layout)
+        layout.addWidget(self.ComponentSelector_group)
+
+    def on_ComponentSelector_changed(self):
+        try:
+            ComponentSelector = str(self.combo.currentText())
+            self.camera_control.set_parameters(
+                {"ComponentSelector": ComponentSelector})
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error Setting ComponentSelector", 
+                str(e), QMessageBox.Ok)
+        pass
 
     def on_apply_framerate(self):
         try:
