@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.label_infos = QLabel()
         self.status_bar.addPermanentWidget(self.label_infos)
-
+            
     def toggle_acquisition(self):
         if self.camera_control.acquisition_running:
             self.spot_image = self.camera_control.get_current_frame()
@@ -589,6 +589,11 @@ class MainWindow(QMainWindow):
             pass
 
     def on_detect_spots(self):
+
+        if self.camera_control.parameters["ComponentSelector"] != "Intensity":
+            self.camera_control.set_parameters({"ComponentSelector": "Intensity"})
+            self.camera_control.parameters["ComponentSelector"] = "Intensity"
+
         if self.camera_control.acquisition_running:
             self.toggle_acquisition()
 
@@ -597,11 +602,17 @@ class MainWindow(QMainWindow):
         num_sigma = int(self.num_sigma_input.text())
         threshold = float(self.threshold_input.text())
 
+        print(self.spot_image.shape)
+
         blobs = self.image_processor.detect_spots(
             self.spot_image, min_sigma, max_sigma, num_sigma, threshold)
 
         self.image_processor.generate_highlighted_image(
             self.spot_image, blobs, self.data_directory)
+        
+        if blobs:
+            length = len(blobs)
+            QMessageBox.information(self, "Info", f"{length} blobs detected")
 
         if not blobs:
             QMessageBox.information(self, "Info", "No valid spots detected.")
@@ -1171,11 +1182,11 @@ class MainWindow(QMainWindow):
                 QMessageBox.Ok
             )
 
-    @Slot(int, int)
-    def on_acquisition_updated(self, frame_counter, error_counter):
+    @Slot(int, int, int)
+    def on_acquisition_updated(self, frame_counter, error_counter, saturation_count):
         fps = round(self.current_framerate, 2)
         self.label_infos.setText(
-            f"Acquired: {frame_counter}, Errors: {error_counter}, fps: {fps}")
+            f"Acquired: {frame_counter}, Errors: {error_counter}, fps: {fps}, Saturation Count: {saturation_count}")
 
     @Slot(str)
     def on_camera_error(self, error_message):

@@ -84,8 +84,11 @@ class ImageProcessor(QObject):
 
         fig.canvas.draw()
 
-        buffer = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        buffer = buffer.reshape((height, width, 3))
+        buffer = fig.canvas.buffer_rgba()
+        buffer = np.asarray(buffer)
+        # buffer = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        buffer = buffer.reshape((height, width, 4))
+        buffer = cv2.cvtColor(buffer, cv2.COLOR_BGRA2BGR)
         qimage = QImage(
             buffer.data, width, height, 3 * width, QImage.Format_RGB888)
 

@@ -8,7 +8,7 @@ class CameraControl(QObject):
     image_acquired = Signal(QImage)
     frame_captured = Signal(object)
     camera_error = Signal(str)
-    acquisition_updated = Signal(int, int)
+    acquisition_updated = Signal(int, int, int)
     parameter_updated = Signal(dict)
     acquisition_started = Signal()
     acquisition_stopped = Signal()
@@ -22,6 +22,7 @@ class CameraControl(QObject):
         self.acquisition_timer = QTimer()
         self.frame_counter = 0
         self.error_counter = 0
+        self.saturation_count = 0
         self.acquisition_running = False
         self.parameters = {
             "AcquisitionFrameRate": {"min": 0, "max": 0, "current": 0},
@@ -187,9 +188,16 @@ class CameraControl(QObject):
 
             self.image_acquired.emit(image_qt.copy())
             self.frame_captured.emit(self.latest_frame)
+            if self.latest_frame is not None:
+                if 255 in self.latest_frame:
+                    self.saturation_count = np.count_nonzero(self.latest_frame == 255)
+                else:
+                    self.saturation_count = 0
+            else:
+                self.saturation_count = -1
             self.frame_counter += 1
             self.acquisition_updated.emit(
-                self.frame_counter, self.error_counter)
+                self.frame_counter, self.error_counter, self.saturation_count)
         except Exception as e:
             self.error_counter += 1
             self.camera_error.emit(f"Error fetching frame: {str(e)}")
@@ -212,9 +220,13 @@ class CameraControl(QObject):
     def set_ComponentSelector(self, ComponentSelector):
         try:
             if ComponentSelector in ["Raw", "Intensity", "IntensityNonPolarized", "IntensityOnlyPolarized", "DegreeOfPolarization", "PolarizationAngle"]:
-                self.node_map_remote_device.FindNode("ComponentSelector")\
-                    .SetCurrentEntry(ComponentSelector)
-                self.node_map_remote_device.FindNode("ComponentEnable").SetValue(True)
+                if self.node_map_remote_device.FindNode("ComponentSelector") != ComponentSelector:
+                    self.node_map_remote_device.FindNode("ComponentSelector")\
+                        .SetCurrentEntry(ComponentSelector)
+                    self.node_map_remote_device.FindNode("ComponentEnable").SetValue(True)
+                    self.parameters["ComponentSelector"] = ComponentSelector
+                else:
+                    pass
             else:
                 raise ValueError("Invalid ComponentSelector type specified")
         except Exception as e:
