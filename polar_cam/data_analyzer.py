@@ -17,6 +17,11 @@ class DataAnalyzer:
         c135 = np.array(intensities['135'])
         c0 = np.array(intensities['0'])
 
+        print(np.count_nonzero(c90 == 0))
+        print(np.count_nonzero(c45 == 0))
+        print(np.count_nonzero(c0 == 0))
+        print(np.count_nonzero(c135 == 0))
+
         I0 = (c0 - c90) / (c0 + c90)
         I1 = (c45 - c135) / (c45 + c135)
         ANIS = I0 + 1j * I1
@@ -114,9 +119,10 @@ class DataAnalyzer:
             x.append(np.sin(phi) * np.cos(theta))
             y.append(np.sin(phi) * np.sin(theta))
             z.append(np.cos(theta))
+
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1, projection='3d')
-        plot = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap=plt.get_cmap('jet'),linewidth=0, antialiased=False, alpha=0.5)
+        plot = ax.scatter3D(np.array(x), np.array(y), np.array(z))
         plot_filename = os.path.join(
             output_directory, f'polar_plot_{spot_id}.png')
         plt.savefig(plot_filename)
