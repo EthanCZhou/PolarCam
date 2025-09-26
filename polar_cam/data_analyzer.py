@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
+import mpl_toolkits.mplot3d.axes3d as axes3d
 
 class DataAnalyzer:
     def __init__(self, nperseg=400, nfft=1600, windowsize=400, overlap=200):
@@ -28,7 +29,10 @@ class DataAnalyzer:
             'ITOT': ITOT
         }
 
+        alpha = 1.3
+
         self.fft_welch(signals, timestamps, spot_id, output_directory)
+        self.angle_plots(c0, c45, c90, alpha, spot_id, output_directory)
 
     def fft_welch(
             self, signals, timestamps, spot_id, output_directory, threshold=1):
@@ -80,3 +84,41 @@ class DataAnalyzer:
             output_directory, f'speed_time_diagram_spot_{spot_id}.png')
         plt.savefig(plot_filename)
         plt.close()
+
+    def angle_plots(self, c0, c45, c90, alpha, spot_id, output_directory):
+        a = (1/6) - (np.cos(alpha)/4) + (((np.cos(alpha))**3)/12)
+        b = (np.cos(alpha)/8) - (((np.cos(alpha))**3)/8)
+        c = (7/48) - (np.cos(alpha)/16) - (((np.cos(alpha))**2)/16) - (((np.cos(alpha))**3)/48)
+
+        phis = []
+        thetas = []
+
+        x = []
+        y = []
+        z = []
+
+        for i in range(len(c90)):
+            try:
+                phi  = ((np.arctan((c45[i] - ((c0[i] + c90[i])/2)) / ((c0[i] - c90[i])/2))) / 2)
+            except:
+                phi = np.pi/4
+
+            phis.append(phi)
+
+            itotal = (((1 - (b/(c*np.cos(2*phi))))*c0[i] + (1 + (b/(c*np.cos(2*phi))))*c90[i])/(2*a))
+
+            theta = np.arcsin(np.sqrt((c0[i] - c90[i])/(2*itotal*c*np.cos(2*phi))))
+
+            thetas.append(theta)
+
+            x.append(np.sin(phi) * np.cos(theta))
+            y.append(np.sin(phi) * np.sin(theta))
+            z.append(np.cos(theta))
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1, projection='3d')
+        plot = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap=plt.get_cmap('jet'),linewidth=0, antialiased=False, alpha=0.5)
+        plot_filename = os.path.join(
+            output_directory, f'polar_plot_{spot_id}.png')
+        plt.savefig(plot_filename)
+        plt.close()
+        
