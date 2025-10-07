@@ -103,6 +103,7 @@ class DataAnalyzer:
         thetas = []
         ixs = []
         iys = []
+        intensities = []
 
         x = []
         y = []
@@ -119,6 +120,8 @@ class DataAnalyzer:
 
             OP = c0[i] + c45[i] + c90[i] + c135[i]
             P = c0[i] - c90[i] + c45[i] - c135[i]
+
+            intensities.append(OP)
 
             sinsqtheta = 4 * A * P / (2 * (ss + cs) * OP * C - 4 * B * P)
             test = np.sqrt(np.abs(sinsqtheta))
@@ -173,5 +176,14 @@ class DataAnalyzer:
         plot_filename_3 = os.path.join(
             output_directory, f'anisotropy_{spot_id}.png')
         plt.savefig(plot_filename_3)
+        plt.close()
+
+        fig4 = plt.figure(figsize=(6, 6))
+        ax1 = fig4.add_subplot(1,1,1, projection='3d')
+        colors = np.array(intensities)
+        plot4 = ax1.scatter3D(np.array(ixs), np.array(iys), np.array(intensities), c=colors, cmap='viridis')
+        plot_filename_4 = os.path.join(
+            output_directory, f'anisotropy3D_{spot_id}.png')
+        plt.savefig(plot_filename_4)
         plt.close()
         
