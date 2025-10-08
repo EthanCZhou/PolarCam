@@ -18,11 +18,6 @@ class DataAnalyzer:
         c135 = np.array(intensities['135'])
         c0 = np.array(intensities['0'])
 
-        print(np.count_nonzero(c90 == 0))
-        print(np.count_nonzero(c45 == 0))
-        print(np.count_nonzero(c0 == 0))
-        print(np.count_nonzero(c135 == 0))
-
         I0 = (c0 - c90) / (c0 + c90)
         I1 = (c45 - c135) / (c45 + c135)
         ANIS = I0 + 1j * I1
@@ -168,7 +163,6 @@ class DataAnalyzer:
         plt.xlabel("X")
         plt.ylabel("Y")
         plt.title(f"Anisotropy Orbit Scatter")
-        plt.axis("equal")
         plt.xlim(-1, 1)
         plt.ylim(-1, 1)
         plt.grid(True)
