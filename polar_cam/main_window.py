@@ -981,7 +981,8 @@ class MainWindow(QMainWindow):
         spot = next((s for s in self.spots if s['id'] == spot_id), None)
         if spot:
             self.adjust_camera_to_spot(spot)
-            self.minimize_exposure()
+            self.camera_control.set_parameters({
+                "ExposureTime": {"current": self.min_exposure * 1000}})
             self.maximize_framerate()
 
             calculated_x = spot['x'] + self.original_settings[
