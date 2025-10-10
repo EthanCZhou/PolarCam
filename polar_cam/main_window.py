@@ -607,8 +607,8 @@ class MainWindow(QMainWindow):
     def on_detect_spots(self):
 
         if self.camera_control.parameters["ComponentSelector"] != "Intensity":
-            self.camera_control.set_parameters({"ComponentSelector": "Intensity"})
             self.camera_control.parameters["ComponentSelector"] = "Intensity"
+            self.combo.setCurrentIndex(1)
 
         if self.camera_control.acquisition_running:
             self.toggle_acquisition()
@@ -650,8 +650,11 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "No valid spots detected.")
             return
 
-        self.blobs = blobs
-        self.spots = self.convert_blobs_to_spots(blobs)
+        self.blobs = [blob*2 for blob in blobs]
+        self.spots = self.convert_blobs_to_spots(self.blobs)
+
+        print(self.blobs)
+        print(self.spots[0])
 
     def convert_blobs_to_spots(self, blobs):
         spots = []
@@ -772,24 +775,29 @@ class MainWindow(QMainWindow):
         self.threshold_input.setText("0.3")
 
     def on_scan_spot(self):
+
+        if self.camera_control.parameters["ComponentSelector"] != "Raw":
+            self.camera_control.parameters["ComponentSelector"] = "Raw"
+            self.combo.setCurrentIndex(0)
+
         if not self.spots:
             QMessageBox.warning(
                 self, "Warning", 
                 "No spots detected or spot detection not yet performed.")
             return
 
-        if not self.camera_control.acquisition_running:
-            self.toggle_acquisition()
-
         self.original_settings = self.save_original_camera_settings()
         self.spots_to_process = self.spots.copy()
         self.sample_folder = os.path.join(
-            self.data_directory, f"Sample {self.sample_counter}")
+            self.data_directory, QFileDialog.getExistingDirectory())
         os.makedirs(self.sample_folder, exist_ok=True)
 
-        duration_seconds, ok = QInputDialog.getInt(
+        if not self.camera_control.acquisition_running:
+            self.toggle_acquisition()
+
+        duration_seconds, ok = QInputDialog.getDouble(
             self, "Scan Duration", "Enter the scan duration in seconds:", 
-            value=10, minValue=1, maxValue=6000, step=1
+            value=10, minValue=0.1, maxValue=6000, step=1
         )
 
         if ok:
@@ -1005,7 +1013,8 @@ class MainWindow(QMainWindow):
         spot = next((s for s in self.spots if s['id'] == spot_id), None)
         if spot:
             self.adjust_camera_to_spot(spot)
-            self.minimize_exposure()
+            self.camera_control.set_parameters({
+                "ExposureTime": {"current": self.min_exposure * 1000}})
             self.maximize_framerate()
 
             calculated_x = spot['x'] + self.original_settings[

@@ -47,11 +47,14 @@ polarcam
 For development, clone the repository and navigate to the project directory:
 
 ```sh
-git clone https://github.com/haibaraaaaai/PolarCam.git
+git clone https://github.com/EthanCZhou/PolarCam.git
 cd PolarCam
 ```
 
-## Author
+## Authors
+
+Ethan Zhou
+ethan.zhou@univ.ox.ac.uk
 
 Daping Xu  
 daping.xu@physics.ox.ac.uk
