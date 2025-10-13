@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit,
     QHBoxLayout, QDockWidget, QFormLayout, QGroupBox, QMessageBox,
-    QStatusBar, QFileDialog, QScrollArea, QApplication, QInputDialog, QComboBox
+    QStatusBar, QFileDialog, QScrollArea, QApplication, QInputDialog, QComboBox, QRadioButton
 )
 from PySide6.QtCore import Qt, QTimer, Slot
 import cv2
@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         self.spot_timestamps_storage = {}
         self.spot_intensities_storage = {}
         self.spot_image = None
+        self.var_image = None
         self.start_time = None
         self.original_settings = None
         self.current_spot_id = None
@@ -163,6 +164,7 @@ class MainWindow(QMainWindow):
         self.create_gain_group(sidebar_layout)
         self.create_spot_detection_group(sidebar_layout)
         self.create_ComponentSelector_group(sidebar_layout)
+        self.create_detection_mode_group(sidebar_layout)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.parameter_sidebar)
 
@@ -373,6 +375,20 @@ class MainWindow(QMainWindow):
 
         self.spot_detection_group.setLayout(form_layout)
         layout.addWidget(self.spot_detection_group)
+
+    def create_detection_mode_group(self, layout):
+        self.detection_mode_group = QGroupBox("Detection Mode")
+        form_layout = QFormLayout()
+
+        self.radiobutton_standard = QRadioButton("Standard")
+        self.radiobutton_standard.setChecked(True)
+        form_layout.addWidget(self.radiobutton_standard)
+
+        self.radiobutton_variance = QRadioButton("Variance")
+        form_layout.addWidget(self.radiobutton_variance)
+
+        self.detection_mode_group.setLayout(form_layout)
+        layout.addWidget(self.detection_mode_group)
 
     def create_ComponentSelector_group(self, layout): 
         self.ComponentSelector_group = QGroupBox("ComponentSelector Parameters")
@@ -602,13 +618,29 @@ class MainWindow(QMainWindow):
         num_sigma = int(self.num_sigma_input.text())
         threshold = float(self.threshold_input.text())
 
-        print(self.spot_image.shape)
+        if self.radiobutton_variance.isChecked():
+            if self.is_recording == True:
+                self.toggle_recording()
+            self.start_time = time.perf_counter()
+            self.toggle_recording()
+            while time.perf_counter < self.start_time + 5:
+                pass
+            self.toggle_recording()
+            video = np.asarray(self.recorded_frames)
+            self.var_image = np.var(video, axis=0)
+            
+            blobs = self.image_processor.detect_spots(
+            self.var_image, min_sigma, max_sigma, num_sigma, threshold)
 
-        blobs = self.image_processor.detect_spots(
+            self.image_processor.generate_highlighted_image(
+            self.spot_image, blobs, self.data_directory)
+        else:
+            blobs = self.image_processor.detect_spots(
             self.spot_image, min_sigma, max_sigma, num_sigma, threshold)
 
-        self.image_processor.generate_highlighted_image(
+            self.image_processor.generate_highlighted_image(
             self.spot_image, blobs, self.data_directory)
+
         
         if blobs:
             length = len(blobs)
