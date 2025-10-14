@@ -606,10 +606,6 @@ class MainWindow(QMainWindow):
 
     def on_detect_spots(self):
 
-        if self.camera_control.parameters["ComponentSelector"] != "Intensity":
-            self.camera_control.parameters["ComponentSelector"] = "Intensity"
-            self.combo.setCurrentIndex(1)
-
         if self.camera_control.acquisition_running:
             self.toggle_acquisition()
 
@@ -619,22 +615,36 @@ class MainWindow(QMainWindow):
         threshold = float(self.threshold_input.text())
 
         if self.radiobutton_variance.isChecked():
-            if self.is_recording == True:
-                self.toggle_recording()
-            self.start_time = time.perf_counter()
-            self.toggle_recording()
-            while time.perf_counter < self.start_time + 5:
-                pass
-            self.toggle_recording()
-            video = np.asarray(self.recorded_frames)
-            self.var_image = np.var(video, axis=0)
+
+            if self.camera_control.parameters["ComponentSelector"] != "Raw":
+                self.camera_control.parameters["ComponentSelector"] = "Raw"
+                self.combo.setCurrentIndex(1)
+
+            try:
+                frame_num = int(self.camera_control.parameters["AcquisitionFrameRate"]["current"] * 5)
+                self.frames = self.recorded_frames[-frame_num:]
+                self.record_button.click()
+            except:
+                print("Not enough recorded frames")
+            
+            self.video = np.asarray(self.frames)
+            self.var_image_unnormalized = np.var(self.video, axis=0)
+            self.var_image = (self.var_image_unnormalized/np.max(self.var_image_unnormalized))
+            print(np.max(self.var_image))
+            print(np.min(self.var_image))
+            print(self.var_image.shape)
             
             blobs = self.image_processor.detect_spots(
             self.var_image, min_sigma, max_sigma, num_sigma, threshold)
 
             self.image_processor.generate_highlighted_image(
             self.spot_image, blobs, self.data_directory)
+                
         else:
+            if self.camera_control.parameters["ComponentSelector"] != "Intensity":
+                self.camera_control.parameters["ComponentSelector"] = "Intensity"
+                self.combo.setCurrentIndex(1)
+
             blobs = self.image_processor.detect_spots(
             self.spot_image, min_sigma, max_sigma, num_sigma, threshold)
 
@@ -650,7 +660,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "No valid spots detected.")
             return
 
-        self.blobs = [blob*2 for blob in blobs]
+        self.blobs = [blob*2 for blob in self.blobs]
         self.spots = self.convert_blobs_to_spots(self.blobs)
 
         print(self.blobs)
